@@ -5,7 +5,7 @@
 | 항목 | 내용 |
 |------|------|
 | 제품명 | Kanban Board |
-| 버전 | v2.0 |
+| 버전 | v3.0 |
 | 작성일 | 2026-06-18 |
 | 배포 URL | https://uyggnodkrap.github.io/kanban-board |
 
@@ -15,13 +15,14 @@
 
 | 영역 | 기술 | 비고 |
 |------|------|------|
-| 마크업 | HTML5 | Semantic elements (`<section>`, `<header>`, `<main>`) |
+| 마크업 | HTML5 | Semantic elements (`<section>`, `<header>`, `<main>`, `<aside>`) |
 | 스타일 | CSS3 | Flexbox, CSS Custom Properties (변수) |
 | 로직 | Vanilla JavaScript (ES2020+) | 프레임워크 없음 |
 | 드래그앤드롭 | HTML5 Drag and Drop API | `draggable="true"` |
 | 인증 | Supabase Auth | 이메일/비밀번호, GitHub OAuth |
-| 데이터베이스 | Supabase (PostgreSQL) | `cards` 테이블, RLS 적용 |
-| Supabase SDK | `@supabase/supabase-js` v2 | CDN (`esm.sh`) |
+| 데이터베이스 | Supabase (PostgreSQL) | boards/cards/activity_log 등 5개 테이블, RLS 적용 |
+| 실시간 | Supabase Realtime | Postgres Changes 구독 (cards, activity_log) |
+| Supabase SDK | `@supabase/supabase-js` v2 | CDN (jsdelivr) |
 | 빌드 | 없음 | 파일 수정 → 브라우저 새로고침으로 즉시 반영 |
 | 배포 | GitHub Pages | `main` 브랜치 루트 디렉토리 |
 
@@ -31,12 +32,14 @@
 
 ```
 kanban/
-├── index.html       # DOM 구조 (인증 패널 + 보드)
-├── style.css        # 스타일 (인증 UI + 보드 컴포넌트)
-├── auth.js          # Supabase 클라이언트 초기화, 인증 로직
-├── script.js        # 칸반 보드 로직 (드래그앤드롭, CRUD + DB 연동)
+├── index.html       # DOM 구조 (인증 패널 + 보드 + 활동로그 패널)
+├── style.css        # 스타일 (인증 UI + 보드 + 사이드패널 + 토스트)
+├── auth.js          # Supabase 클라이언트, 인증, 초대코드 감지
+├── invite.js        # 보드 관리, 초대 링크 생성/수락, 토스트
+├── script.js        # 칸반 보드 로직 (드래그앤드롭, CRUD, Realtime, 활동로그)
 ├── CLAUDE.md
 ├── TASKS.md
+├── WORKFLOW.md
 └── docs/
     ├── PRD.md
     ├── MRD.md
@@ -64,35 +67,28 @@ kanban/
 <div id="board-wrapper" class="hidden">
   <header>
     <h1>Kanban Board</h1>
-    <div class="user-info">
+    <div class="header-right">
       <span id="user-email"></span>
+      <button id="btn-invite" class="btn-invite">팀원 초대</button>
       <button id="btn-signout">로그아웃</button>
     </div>
   </header>
-  <main class="board">
-    <section class="column" id="todo"        data-column="todo">
-    <section class="column" id="in-progress" data-column="in-progress">
-    <section class="column" id="done"        data-column="done">
-  </main>
-</div>
-```
 
-각 `<section>` 내부:
-```html
-<div class="column-header">
-  <h2>컬럼명</h2>
-  <span class="card-count">0</span>
-</div>
-<div class="cards">
-  <div class="card" id="card-{uuid}" draggable="true">
-    <span class="card-text">내용</span>
-    <button class="delete-btn" aria-label="카드 삭제">×</button>
+  <div id="board-area">
+    <main class="board">
+      <section class="column" id="todo"        data-column="todo">
+      <section class="column" id="in-progress" data-column="in-progress">
+      <section class="column" id="done"        data-column="done">
+    </main>
+
+    <aside id="activity-panel" class="activity-panel">
+      <div class="activity-header"><h3>활동 로그</h3></div>
+      <ul id="activity-list" class="activity-list"></ul>
+    </aside>
   </div>
+
+  <div id="toast" class="toast hidden"></div>
 </div>
-<form class="add-form">
-  <input type="text" placeholder="새 카드 추가..." />
-  <button type="submit">추가</button>
-</form>
 ```
 
 ---
@@ -104,59 +100,70 @@ kanban/
 | 역할 | 구현 |
 |------|------|
 | Supabase 클라이언트 초기화 | `window.supabase.createClient(URL, ANON_KEY)` → `window.supabaseClient` |
-| 인증 상태 감지 | `onAuthStateChange` → 로그인 시 보드 표시, 로그아웃 시 인증 패널 표시 |
+| 초대 코드 감지 | 페이지 로드 시 `?invite=` 파라미터 → `sessionStorage` 저장 |
+| 인증 상태 감지 | `onAuthStateChange` (async) → `window.currentUser` 설정 → `loadOrCreateBoard` 또는 `acceptInvite` → `initBoard` |
 | 이메일 로그인 | `signInWithPassword({ email, password })` |
 | 회원가입 | `signUp({ email, password, options: { emailRedirectTo } })` |
-| GitHub OAuth | `signInWithOAuth({ provider: 'github', options: { redirectTo } })` |
-| 로그아웃 | `signOut()` |
+| GitHub OAuth | `signInWithOAuth({ provider: 'github', options: { redirectTo } })` — 초대 파라미터 보존 |
+| 로그아웃 | `signOut()` → `window.currentUser`, `window.currentBoardId` 초기화 |
 
-`emailRedirectTo` / `redirectTo`: `window.location.origin + window.location.pathname`  
-(로컬·GitHub Pages 양쪽에서 정확한 경로로 리다이렉트)
-
-### 5-2. script.js — 보드 로직
+### 5-2. invite.js — 보드/초대 모듈
 
 | 함수 | 역할 |
 |------|------|
-| `initBoard()` | 로그인 후 호출: DB에서 카드 로드, 없으면 샘플 카드 삽입 |
-| `createCardEl(card)` | 카드 DOM 생성 + 이벤트 바인딩 |
-| `addCardToColumn(cardEl, columnEl)` | 카드를 컬럼 `.cards`에 삽입 + 뱃지 갱신 |
-| `deleteCard(cardEl, cardId)` | DB 삭제 + DOM 제거 |
-| `updateCardCount(columnEl)` | 컬럼 카드 수 뱃지 갱신 |
-| `bindDragEvents(cardEl)` | dragstart/dragend 이벤트 연결 |
-| `bindColumnDropEvents(columnEl)` | dragover/dragleave/drop 이벤트 연결 (drop 시 DB 업데이트) |
+| `loadOrCreateBoard(user)` | boards 조회 → 없으면 INSERT → `window.currentBoardId` 설정 |
+| `acceptInvite(user, code)` | 초대코드 검증 → 만료 확인 → board_members INSERT → activity_log 기록 |
+| `generateInviteLink()` | board_invites INSERT → URL 생성 → 클립보드 복사 |
+| `showToast(msg, isError)` | `#toast` 3초 표시 |
 
-### 5-3. Supabase DB 연동
+### 5-3. script.js — 보드 로직
+
+| 함수 | 역할 |
+|------|------|
+| `initBoard()` | 로그인 후 호출: DB에서 카드 로드, Realtime 구독, 활동로그 초기화 |
+| `createCard(text, id)` | 카드 DOM 생성 + 이벤트 바인딩 |
+| `addCardToColumn(card, columnEl)` | 카드를 컬럼 `.cards`에 삽입 + 카운트 갱신 |
+| `bindDragEvents(cardEl)` | dragstart/dragend 이벤트 연결 |
+| `bindColumnDropEvents(columnEl)` | dragover/dragleave/drop 이벤트 연결 |
+| `handleCardChange(payload)` | Realtime 카드 변경 처리 (INSERT/UPDATE/DELETE → DOM 반영) |
+| `logActivity(action, details)` | activity_log INSERT (fire-and-forget) |
+| `initActivityLog()` | 최근 50개 로그 로드 + Realtime 구독 |
+| `renderActivityEntry(entry)` | 활동 로그 항목 DOM 생성 및 prepend |
+
+### 5-4. Supabase DB 연동
 
 | 작업 | Supabase 호출 |
 |------|-------------|
-| 카드 목록 조회 | `supabaseClient.from('cards').select('*').order('created_at')` |
-| 카드 생성 | `supabaseClient.from('cards').insert({ user_id, column_id, text })` |
-| 카드 이동 | `supabaseClient.from('cards').update({ column_id }).eq('id', cardId)` |
-| 카드 삭제 | `supabaseClient.from('cards').delete().eq('id', cardId)` |
+| 카드 목록 조회 | `from('cards').select('*').eq('board_id', boardId).order('created_at')` |
+| 카드 생성 | `from('cards').insert({ board_id, column_id, text })` |
+| 카드 이동 | `from('cards').update({ column_id }).eq('id', cardId)` |
+| 카드 삭제 | `from('cards').delete().eq('id', cardId)` |
+| 활동 로그 조회 | `from('activity_log').select('*').eq('board_id', boardId).order('created_at', { ascending: false }).limit(50)` |
 
-### 5-4. 드래그앤드롭 이벤트 흐름
+### 5-5. Realtime 구독
+
+```js
+// 카드 실시간 (INSERT/UPDATE/DELETE)
+supabaseClient.channel('cards-' + boardId)
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'cards',
+      filter: `board_id=eq.${boardId}` }, handleCardChange)
+  .subscribe();
+
+// 활동 로그 실시간 (INSERT)
+supabaseClient.channel('log-' + boardId)
+  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'activity_log',
+      filter: `board_id=eq.${boardId}` }, (p) => renderActivityEntry(p.new))
+  .subscribe();
+```
+
+### 5-6. 드래그앤드롭 이벤트 흐름
 
 ```
-dragstart (card)
-  └─ card.classList.add('dragging')
-  └─ dataTransfer.setData('text/plain', card.id)
-
-dragover (column)
-  └─ e.preventDefault()   ← 드롭 허용
-  └─ column.classList.add('drag-over')
-
-dragleave (column)
-  └─ column.classList.remove('drag-over')
-
-drop (column)
-  └─ column.classList.remove('drag-over')
-  └─ cardId = dataTransfer.getData('text/plain')
-  └─ column.querySelector('.cards').appendChild(card)
-  └─ supabase.update({ column_id: column.dataset.column })
-  └─ updateCardCount(모든 컬럼)
-
-dragend (card)
-  └─ card.classList.remove('dragging')
+dragstart (card)  → classList.add('dragging'), dataTransfer.setData(card.id)
+dragover (column) → preventDefault(), classList.add('drag-over')
+dragleave (column)→ classList.remove('drag-over')
+drop (column)     → DB update(column_id), DOM 이동, logActivity('card_moved')
+dragend (card)    → classList.remove('dragging')
 ```
 
 ---
@@ -164,13 +171,26 @@ dragend (card)
 ## 6. CSS 설계
 
 - CSS Custom Properties (`:root`)로 색상·간격 토큰 정의
-- Flexbox로 보드 3단 레이아웃 구현
+- `#board-area`: Flexbox로 보드 + 활동로그 패널 가로 배치
+- `.board`: `flex: 1`로 남은 공간 차지
+- `.activity-panel`: `width: 260px`, `position: sticky`
 - 인증 패널: 중앙 정렬 카드형 UI
-- 반응형: `min-width` 768px 미만에서 세로 스택 전환
+- 반응형: 768px 미만에서 `#board-area` 세로 스택, `.activity-panel` 전체 너비
 
 ---
 
-## 7. Supabase 설정
+## 7. 전역 상태
+
+| 변수 | 설정 위치 | 역할 |
+|------|----------|------|
+| `window.supabaseClient` | auth.js | Supabase 클라이언트 인스턴스 |
+| `window.currentUser` | auth.js | 현재 로그인 유저 객체 |
+| `window.currentBoardId` | invite.js | 현재 활성 보드 UUID |
+| `window._boardEventsInitialized` | script.js | 폼/드래그 이벤트 중복 바인딩 방지 플래그 |
+
+---
+
+## 8. Supabase 설정
 
 | 항목 | 값 |
 |------|---|
@@ -178,15 +198,16 @@ dragend (card)
 | Auth > Site URL | `https://uyggnodkrap.github.io/kanban-board` |
 | Auth > Redirect URLs | `https://uyggnodkrap.github.io/kanban-board`, `https://uyggnodkrap.github.io/kanban-board/` |
 | Auth > Providers | Email, GitHub OAuth |
+| Database > Replication | cards, activity_log Realtime 활성화 |
 
 ---
 
-## 8. 브라우저 호환성
+## 9. 브라우저 호환성
 
 | 기능 | Chrome | Firefox | Edge | Safari |
 |------|--------|---------|------|--------|
 | HTML5 DnD API | ✅ | ✅ | ✅ | ✅ |
 | CSS Flexbox | ✅ | ✅ | ✅ | ✅ |
 | CSS Custom Properties | ✅ | ✅ | ✅ | ✅ |
-| `crypto.randomUUID()` | ✅ 92+ | ✅ 95+ | ✅ 92+ | ✅ 15.4+ |
+| Clipboard API | ✅ 66+ | ✅ 63+ | ✅ 79+ | ✅ 13.1+ |
 | ES Modules (CDN) | ✅ | ✅ | ✅ | ✅ |
