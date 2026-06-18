@@ -63,51 +63,66 @@
       <h1>Kanban Board</h1>
       <div class="header-right">
         <span id="user-email" class="user-email"></span>
+        <button id="btn-invite" class="btn-invite">팀원 초대</button>
         <button id="btn-signout">로그아웃</button>
       </div>
     </header>
 
-    <main class="board">
-      <section class="column" id="todo" data-column="todo">
-        <div class="column-header">
-          <h2>Todo</h2>
-          <span class="card-count">0</span>
-        </div>
-        <div class="cards"></div>
-        <form class="add-form">
-          <input type="text" placeholder="새 카드 추가..." />
-          <button type="submit">추가</button>
-        </form>
-      </section>
+    <div id="board-area">
+      <main class="board">
+        <section class="column" id="todo" data-column="todo">
+          <div class="column-header">
+            <h2>Todo</h2>
+            <span class="card-count">0</span>
+          </div>
+          <div class="cards"></div>
+          <form class="add-form">
+            <input type="text" placeholder="새 카드 추가..." />
+            <button type="submit">추가</button>
+          </form>
+        </section>
 
-      <section class="column" id="in-progress" data-column="in-progress">
-        <div class="column-header">
-          <h2>In Progress</h2>
-          <span class="card-count">0</span>
-        </div>
-        <div class="cards"></div>
-        <form class="add-form">
-          <input type="text" placeholder="새 카드 추가..." />
-          <button type="submit">추가</button>
-        </form>
-      </section>
+        <section class="column" id="in-progress" data-column="in-progress">
+          <div class="column-header">
+            <h2>In Progress</h2>
+            <span class="card-count">0</span>
+          </div>
+          <div class="cards"></div>
+          <form class="add-form">
+            <input type="text" placeholder="새 카드 추가..." />
+            <button type="submit">추가</button>
+          </form>
+        </section>
 
-      <section class="column" id="done" data-column="done">
-        <div class="column-header">
-          <h2>Done</h2>
-          <span class="card-count">0</span>
+        <section class="column" id="done" data-column="done">
+          <div class="column-header">
+            <h2>Done</h2>
+            <span class="card-count">0</span>
+          </div>
+          <div class="cards"></div>
+          <form class="add-form">
+            <input type="text" placeholder="새 카드 추가..." />
+            <button type="submit">추가</button>
+          </form>
+        </section>
+      </main>
+
+      <aside id="activity-panel" class="activity-panel">
+        <div class="activity-header">
+          <h3>활동 로그</h3>
         </div>
-        <div class="cards"></div>
-        <form class="add-form">
-          <input type="text" placeholder="새 카드 추가..." />
-          <button type="submit">추가</button>
-        </form>
-      </section>
-    </main>
+        <ul id="activity-list" class="activity-list">
+          <li class="activity-empty">아직 활동이 없습니다.</li>
+        </ul>
+      </aside>
+    </div>
+
+    <div id="toast" class="toast hidden" aria-live="assertive"></div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="auth.js" defer></script>
+  <script src="invite.js" defer></script>
   <script src="script.js" defer></script>
 </body>
 </html>

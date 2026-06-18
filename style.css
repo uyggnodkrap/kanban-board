@@ -62,11 +62,20 @@ header h1 {
   color: var(--color-text-primary);
 }
 
+/* ── Board Area (board + activity panel) ── */
+#board-area {
+  display: flex;
+  gap: var(--space-lg);
+  padding: 0 var(--space-xl) var(--space-xl);
+  align-items: flex-start;
+}
+
 /* ── Board ── */
 .board {
   display: flex;
   gap: var(--space-lg);
-  padding: 0 var(--space-xl) var(--space-xl);
+  flex: 1;
+  min-width: 0;
   align-items: flex-start;
 }
 
@@ -406,10 +415,120 @@ header {
   color: var(--color-danger);
 }
 
+/* ── Activity Panel ── */
+.activity-panel {
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--color-column-bg);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  position: sticky;
+  top: var(--space-lg);
+}
+
+.activity-header {
+  margin-bottom: var(--space-md);
+}
+
+.activity-header h3 {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.activity-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.activity-item {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-item strong {
+  color: var(--color-text-primary);
+}
+
+.activity-item time {
+  display: block;
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+  font-size: 0.7rem;
+}
+
+.activity-empty {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  text-align: center;
+  padding: var(--space-xl) 0;
+  list-style: none;
+}
+
+/* ── Invite Button ── */
+.btn-invite {
+  background: none;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  padding: var(--space-xs) var(--space-md);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family);
+  color: var(--color-primary);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.btn-invite:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: var(--space-xl);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-text-primary);
+  color: #fff;
+  padding: var(--space-sm) var(--space-xl);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family);
+  z-index: 1000;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.toast.error {
+  background: var(--color-danger);
+}
+
 /* ── Responsive ── */
 @media (max-width: 767px) {
+  #board-area {
+    flex-direction: column;
+  }
+
   .board {
     flex-direction: column;
+  }
+
+  .activity-panel {
+    width: 100%;
+    position: static;
+    max-height: 300px;
   }
 
   .column {

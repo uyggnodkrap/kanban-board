@@ -6,6 +6,11 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 window.supabaseClient = supabaseClient;
 
+// 초대 코드를 URL 파라미터 또는 sessionStorage에서 감지
+const _inviteCode = new URLSearchParams(window.location.search).get('invite')
+                 || sessionStorage.getItem('pendingInvite');
+if (_inviteCode) sessionStorage.setItem('pendingInvite', _inviteCode);
+
 // ── 뷰 전환 헬퍼 ──────────────────────────────────────────────────────────────
 const AUTH_VIEWS = ['view-signin', 'view-signup', 'view-verify'];
 
@@ -30,14 +35,23 @@ function showAuth() {
 // ── 인증 상태 변화 감지 (핵심 로직) ──────────────────────────────────────────
 let kanbanInitialized = false;
 
-supabaseClient.auth.onAuthStateChange((event, session) => {
+supabaseClient.auth.onAuthStateChange(async (event, session) => {
   if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+    window.currentUser = session.user;
     showBoard(session.user.email);
     if (!kanbanInitialized) {
-      window.initBoard?.();
       kanbanInitialized = true;
+      const pending = sessionStorage.getItem('pendingInvite');
+      if (pending) {
+        await window.acceptInvite?.(session.user, pending);
+      } else {
+        await window.loadOrCreateBoard?.(session.user);
+      }
+      window.initBoard?.();
     }
   } else if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
+    window.currentUser = null;
+    window.currentBoardId = null;
     showAuth();
     kanbanInitialized = false;
   }
@@ -89,7 +103,7 @@ document.getElementById('btn-back-signin').addEventListener('click', () => showV
 document.getElementById('btn-github-signin').addEventListener('click', async () => {
   const { error } = await supabaseClient.auth.signInWithOAuth({
     provider: 'github',
-    options: { redirectTo: window.location.origin + window.location.pathname },
+    options: { redirectTo: window.location.origin + window.location.pathname + window.location.search },
   });
   if (error) console.error('GitHub 로그인 실패:', error.message);
 });
