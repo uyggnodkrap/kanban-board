@@ -2,8 +2,7 @@
 
 ## 1. 개요
 
-칸반보드 v1.0 구현을 위한 태스크를 Phase별로 정의한다.
-각 태스크는 독립적으로 완료 가능하도록 분리되어 있다.
+칸반보드 구현 태스크를 Phase별로 정의한다.
 
 ---
 
@@ -25,14 +24,14 @@
 ## 3. Phase 1: HTML 구조 구현
 
 - [x] `index.html` 파일 생성
-- [x] `<header>` — 보드 제목 작성
-- [x] `<main class="board">` 컨테이너 작성
-- [x] Todo 컬럼 `<section>` 작성 (헤더 + `.cards` + `.add-form`)
-- [x] In Progress 컬럼 `<section>` 작성
-- [x] Done 컬럼 `<section>` 작성
-- [x] 각 컬럼에 샘플 카드 2~3개 하드코딩 (JS `SAMPLE_CARDS` 로 초기화)
+- [x] 인증 패널 (`#auth-panel`) — 로그인/회원가입/이메일인증 뷰 3종
+- [x] 보드 래퍼 (`#board-wrapper`) — 헤더 + 3컬럼 보드
+- [x] `<header>` — 보드 제목 + 사용자 이메일 + 로그아웃 버튼
+- [x] Todo / In Progress / Done 컬럼 `<section>` 작성
 - [x] `<link rel="stylesheet" href="style.css">` 연결
-- [x] `<script src="script.js" defer>` 연결
+- [x] Supabase CDN 스크립트 로드 (`esm.sh`)
+- [x] `<script src="auth.js" type="module">` 연결
+- [x] `<script src="script.js" type="module">` 연결
 
 ---
 
@@ -40,85 +39,87 @@
 
 - [x] `style.css` 파일 생성
 - [x] `:root` — CSS 토큰 정의 (색상, 간격, 반경, 그림자, 폰트)
-- [x] `body` — 기본 스타일, 폰트 패밀리 설정
-- [x] `header` — 보드 제목 스타일
+- [x] 인증 패널 스타일 (중앙 정렬, 카드형 UI)
+- [x] 인증 폼 스타일 (입력 필드, 에러 메시지)
+- [x] GitHub 로그인 버튼 스타일 (`.btn-github`)
+- [x] `header` — 보드 헤더 (제목 + 유저 정보)
 - [x] `.board` — Flexbox 3단 레이아웃
-- [x] `.column` — 컬럼 기본 스타일 (배경, 패딩, 반경)
+- [x] `.column` — 컬럼 기본 스타일
 - [x] `.column.drag-over` — 드롭 대상 강조 스타일
-- [x] `.column-header` — 헤더 Flexbox (제목 + 뱃지)
-- [x] `.card-count` — 카드 수 뱃지
-- [x] `.cards` — 카드 목록 컨테이너 (min-height 확보)
 - [x] `.card` — 카드 기본 스타일 (배경, 그림자, 패딩)
-- [x] `.card:hover` — hover 그림자 강화
-- [x] `.card.dragging` — 드래그 중 투명도
+- [x] `.card:hover` / `.card.dragging` — 인터랙션 스타일
 - [x] `.delete-btn` — 삭제 버튼 스타일
-- [x] `.delete-btn:hover` — 빨간색 hover
-- [x] `.add-form` — 폼 Flexbox 레이아웃
-- [x] `.add-form input` — 입력 필드 스타일 + focus 링
-- [x] `.add-form button` — 추가 버튼 스타일 + hover
-- [x] `@media (max-width: 767px)` — 모바일 세로 스택 (기본 대응)
+- [x] `.add-form` — 카드 추가 폼 스타일
+- [x] `@media (max-width: 767px)` — 모바일 세로 스택
 
 ---
 
-## 5. Phase 3: JavaScript — 드래그앤드롭 구현
+## 5. Phase 3: Supabase 인증 구현 (auth.js)
 
-- [x] `script.js` 파일 생성
-- [x] 모든 `.column` 요소에 `dragover` 이벤트 연결 (`e.preventDefault()`)
-- [x] 모든 `.column` 요소에 `dragleave` 이벤트 연결 (`.drag-over` 해제)
-- [x] 모든 `.column` 요소에 `drop` 이벤트 연결 (카드 이동 로직)
-- [x] `dragover` 시 `.drag-over` 클래스 추가
-- [x] `drop` 시 `dataTransfer.getData()`로 카드 ID 읽기
-- [x] `drop` 시 카드를 대상 컬럼 `.cards`에 `appendChild`
-- [x] `drop` 후 카드 수 뱃지 갱신
-- [x] 샘플 카드에 `dragstart` 이벤트 연결 (`.dragging` 추가)
-- [x] 샘플 카드에 `dragend` 이벤트 연결 (`.dragging` 제거)
+- [x] Supabase 클라이언트 초기화 (`window.supabaseClient`)
+- [x] `onAuthStateChange` — 로그인/로그아웃 상태 감지 → 화면 전환
+- [x] 이메일/비밀번호 로그인 (`signInWithPassword`)
+- [x] 이메일/비밀번호 회원가입 (`signUp` + `emailRedirectTo`)
+- [x] GitHub OAuth 로그인 (`signInWithOAuth` + `redirectTo`)
+- [x] 로그아웃 (`signOut`)
+- [x] `redirectTo`: `window.location.origin + window.location.pathname` (GitHub Pages 대응)
+- [x] 인증 뷰 전환 헬퍼 (`showView`, `showBoard`, `showAuth`)
 
 ---
 
-## 6. Phase 4: JavaScript — 카드 CRUD 구현
+## 6. Phase 4: 칸반 보드 + DB 연동 구현 (script.js)
 
-- [x] `createCard(text)` 함수 구현 (카드 DOM 생성)
-- [x] 카드 생성 시 고유 ID 부여 (`card-${Date.now()}` 또는 `crypto.randomUUID()`)
-- [x] 새 카드에 `dragstart` / `dragend` 이벤트 바인딩
-- [x] 새 카드에 삭제 버튼 `click` 이벤트 바인딩
-- [x] 각 `.add-form`에 `submit` 이벤트 연결
-- [x] 빈 텍스트 입력 시 카드 생성 차단
-- [x] 카드 추가 후 입력 필드 초기화
-- [x] 카드 추가 후 해당 컬럼 카드 수 뱃지 갱신
-- [x] 삭제 버튼 클릭 시 `card.remove()` 실행
-- [x] 삭제 후 해당 컬럼 카드 수 뱃지 갱신
-- [x] `updateCardCount(columnEl)` 헬퍼 함수 구현
+- [x] `initBoard()` — DB에서 카드 로드, 없으면 샘플 카드 삽입
+- [x] `createCardEl(card)` — 카드 DOM 생성 + 이벤트 바인딩
+- [x] `addCardToColumn(cardEl, columnEl)` — 카드 삽입 + 뱃지 갱신
+- [x] `deleteCard(cardEl, cardId)` — DB 삭제 + DOM 제거
+- [x] `updateCardCount(columnEl)` — 카드 수 뱃지 갱신
+- [x] 드래그앤드롭 이벤트 (dragstart/dragend/dragover/dragleave/drop)
+- [x] drop 시 Supabase `update({ column_id })` 호출
+- [x] 카드 추가 폼 submit → Supabase `insert` → DOM 추가
+- [x] 빈 텍스트 입력 차단
 
 ---
 
-## 7. Phase 5: 초기화 및 마무리
+## 7. Phase 5: Supabase 설정
 
-- [x] 페이지 로드 시 샘플 카드를 JS로 초기화하는 방식으로 전환 (`SAMPLE_CARDS` + `initSampleCards`)
-- [x] 모든 초기 카드에 드래그앤드롭 + 삭제 이벤트 자동 바인딩 확인
-- [x] 컬럼 카드 수 뱃지 초기값 설정 (`addCardToColumn` 내 `updateCardCount` 호출)
-
----
-
-## 8. Phase 6: 검증
-
-- [x] `python3 -m http.server 3000` 실행 후 접속 (HTTP 200 확인)
-- [ ] Todo → In Progress 카드 드래그 이동 확인
-- [ ] In Progress → Done 카드 드래그 이동 확인
-- [ ] Done → Todo 역방향 이동 확인
-- [ ] 각 컬럼 카드 추가 확인
-- [ ] 빈 텍스트 입력 시 차단 확인
-- [ ] 카드 삭제 확인
-- [ ] 카드 수 뱃지 갱신 확인
-- [ ] 드래그 중 카드 투명도 확인
-- [ ] 드롭 대상 컬럼 강조 확인
-- [ ] Chrome / Firefox / Edge 각각에서 동작 확인
+- [x] Supabase 프로젝트 생성
+- [x] `cards` 테이블 생성 (id, user_id, column_id, text, created_at)
+- [x] Row Level Security (RLS) 활성화 + 정책 설정
+- [x] GitHub OAuth Provider 활성화
+- [x] Site URL: `https://uyggnodkrap.github.io/kanban-board`
+- [x] Redirect URLs 추가 (GitHub Pages URL)
 
 ---
 
-## 9. Phase 7: 향후 작업 (v1.1+)
+## 8. Phase 6: GitHub Pages 배포
 
-- [ ] LocalStorage 영속성 구현
-- [ ] 카드 텍스트 인라인 편집 기능
+- [x] GitHub 저장소 생성 (`kanban-board`)
+- [x] 코드 푸시 (`main` 브랜치)
+- [x] GitHub Pages 활성화 (Settings > Pages > main / root)
+- [x] `auth.js` redirectTo 경로 수정 (`+ window.location.pathname`)
+- [x] 배포 확인: `https://uyggnodkrap.github.io/kanban-board`
+
+---
+
+## 9. Phase 7: 검증
+
+- [x] GitHub Pages 접속 확인 (HTTP 200)
+- [x] 이메일 회원가입 + 인증 메일 발송 확인
+- [x] 이메일 로그인 확인
+- [x] GitHub OAuth 로그인 확인
+- [x] 로그아웃 확인
+- [x] 카드 추가 → DB 저장 → 새로고침 후 유지 확인
+- [x] 카드 드래그앤드롭 이동 → DB 반영 확인
+- [x] 카드 삭제 → DB 반영 확인
+- [x] 모바일 레이아웃 확인
+
+---
+
+## 10. 향후 작업 (v3.0)
+
 - [ ] 모바일 터치 드래그앤드롭 지원
+- [ ] 카드 텍스트 인라인 편집 기능
 - [ ] 카드 순서 정렬 (컬럼 내 위치 지정)
-- [ ] REST API 연동을 위한 `api.js` 레이어 분리
+- [ ] 마감일, 라벨 등 카드 메타데이터
+- [ ] DB 요청 실패 시 UI 에러 처리

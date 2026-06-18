@@ -58,7 +58,123 @@
 
 ## 3. 컴포넌트 클래스 명세
 
-### 3-1. `.board`
+### 3-1. 인증 패널 (`#auth-panel`)
+
+인증 화면 전체 래퍼.
+
+```css
+#auth-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: var(--color-bg);
+}
+```
+
+인증 카드 (폼을 감싸는 컨테이너):
+```css
+.auth-card {
+  background: var(--color-card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card-hover);
+  padding: var(--space-2xl);
+  width: 100%;
+  max-width: 360px;
+}
+```
+
+---
+
+### 3-2. 인증 폼 공통
+
+```css
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.auth-form input[type="email"],
+.auth-form input[type="password"] {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.auth-form input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.auth-error {
+  font-size: var(--font-size-xs);
+  color: var(--color-danger);
+  min-height: 1em;
+}
+```
+
+---
+
+### 3-3. GitHub 로그인 버튼 (`.btn-github`)
+
+```css
+.btn-github {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  width: 100%;
+  background: #24292e;
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.btn-github:hover {
+  background: #1a1e22;
+}
+```
+
+---
+
+### 3-4. Header (`.header`)
+
+로그인 후 보드 상단 헤더.
+
+```css
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-lg) var(--space-xl);
+  background: var(--color-card-bg);
+  box-shadow: var(--shadow-card);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+```
+
+---
+
+### 3-5. `.board`
 
 보드 전체 컨테이너.
 
@@ -67,7 +183,7 @@
   display: flex;
   gap: var(--space-lg);
   padding: var(--space-xl);
-  min-height: 100vh;
+  min-height: calc(100vh - 60px);
   background: var(--color-bg);
   align-items: flex-start;
 }
@@ -75,7 +191,7 @@
 
 ---
 
-### 3-2. `.column`
+### 3-6. `.column`
 
 개별 컬럼 컨테이너.
 
@@ -99,7 +215,7 @@
 
 ---
 
-### 3-3. `.column-header`
+### 3-7. `.column-header`
 
 컬럼 헤더 (제목 + 카드 수 뱃지).
 
@@ -130,7 +246,7 @@
 
 ---
 
-### 3-4. `.cards`
+### 3-8. `.cards`
 
 카드 목록 컨테이너.
 
@@ -143,7 +259,7 @@
 
 ---
 
-### 3-5. `.card`
+### 3-9. `.card`
 
 개별 카드.
 
@@ -164,12 +280,10 @@
   user-select: none;
 }
 
-/* hover */
 .card:hover {
   box-shadow: var(--shadow-card-hover);
 }
 
-/* 드래그 중 */
 .card.dragging {
   opacity: 0.4;
   cursor: grabbing;
@@ -185,7 +299,7 @@
 
 ---
 
-### 3-6. `.delete-btn`
+### 3-10. `.delete-btn`
 
 카드 삭제 버튼.
 
@@ -209,7 +323,7 @@
 
 ---
 
-### 3-7. `.add-form`
+### 3-11. `.add-form`
 
 카드 추가 폼.
 
@@ -262,6 +376,9 @@
 
 | 컴포넌트 | 상태 | 클래스 | 설명 |
 |---------|------|--------|------|
+| AuthPanel | 뷰 전환 | `#view-signin`, `#view-signup`, `#view-verify` | `.hidden`으로 토글 |
+| Board | 로그인 전 | `.hidden` on `#board-wrapper` | 보드 숨김 |
+| Board | 로그인 후 | `.hidden` 제거 | 보드 표시 |
 | Card | 기본 | `.card` | 정상 표시 |
 | Card | 드래그 중 | `.card.dragging` | opacity 0.4, cursor grabbing |
 | Column | 기본 | `.column` | 정상 배경 |
@@ -277,9 +394,8 @@
 
 | 브레이크포인트 | 기준 | 레이아웃 변화 |
 |-------------|------|-------------|
-| Desktop | `≥ 1024px` | 3컬럼 가로 배치 |
-| Tablet | `768px ~ 1023px` | 3컬럼 가로 (축소) |
-| Mobile | `< 768px` | 세로 스택 (v1.1 대응) |
+| Desktop | `≥ 768px` | 3컬럼 가로 배치, 헤더 가로 정렬 |
+| Mobile | `< 768px` | 세로 스택, 컬럼 전체 너비 |
 
 ```css
 @media (max-width: 767px) {
@@ -299,8 +415,9 @@
 
 | 분류 | 패턴 | 예시 |
 |------|------|------|
-| 컴포넌트 클래스 | 케밥케이스 | `.column-header`, `.add-form` |
-| 상태 클래스 | 단어 | `.dragging`, `.drag-over` |
+| 컴포넌트 클래스 | 케밥케이스 | `.column-header`, `.add-form`, `.btn-github` |
+| 상태 클래스 | 단어 | `.dragging`, `.drag-over`, `.hidden` |
 | CSS 변수 | `--{카테고리}-{이름}` | `--color-primary`, `--space-lg` |
 | 카드 ID | `card-{uuid}` | `card-abc123` |
 | 컬럼 ID | 케밥케이스 | `todo`, `in-progress`, `done` |
+| 인증 뷰 ID | `view-{이름}` | `view-signin`, `view-signup`, `view-verify` |
