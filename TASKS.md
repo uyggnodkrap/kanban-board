@@ -7,3 +7,4 @@
 - [x] auth.js — Supabase 이메일 인증(로그인/회원가입/로그아웃) 연동
 - [x] Supabase DB 연동 — cards 테이블 CRUD (카드 추가/삭제/컬럼 이동 영속화)
 - [x] GitHub 소셜 로그인 연동
+- [x] GitHub Pages 배포 — auth.js redirectTo 경로 수정, Supabase URL 설정

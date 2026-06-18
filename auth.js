@@ -70,7 +70,7 @@ document.getElementById('form-signup').addEventListener('submit', async (e) => {
   const { error } = await supabaseClient.auth.signUp({
     email,
     password,
-    options: { emailRedirectTo: window.location.origin },
+    options: { emailRedirectTo: window.location.origin + window.location.pathname },
   });
 
   if (error) {
@@ -89,7 +89,7 @@ document.getElementById('btn-back-signin').addEventListener('click', () => showV
 document.getElementById('btn-github-signin').addEventListener('click', async () => {
   const { error } = await supabaseClient.auth.signInWithOAuth({
     provider: 'github',
-    options: { redirectTo: window.location.origin },
+    options: { redirectTo: window.location.origin + window.location.pathname },
   });
   if (error) console.error('GitHub 로그인 실패:', error.message);
 });
