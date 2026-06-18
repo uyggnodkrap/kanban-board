@@ -54,7 +54,7 @@ function createCard(text, id) {
     const column = card.closest('.column');
     card.remove();
     if (column) updateCardCount(column);
-    logActivity('card_deleted', { card_id: id, card_text: cardText });
+    logActivity('card_deleted', { card_text: cardText });
   });
 
   card.appendChild(span);
